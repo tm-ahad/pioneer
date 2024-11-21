@@ -17,7 +17,7 @@ static bool compareCaseInsensitive(const string& a, const string& b)
 
 void start_cli()
 {
-	Book book;
+	Book book(0, 0);
 
 	while (true) 
 	{
@@ -29,6 +29,9 @@ void start_cli()
 		vector<string> _split = split(input, " ");
 		if (compareCaseInsensitive(_split[0], "make"))
 		{
+			book.clear();
+
+
 			if (_split.size() < 3)
 			{
 				cout << "Usage: make <pgn_file_name> <out_file_name>" << endl;
@@ -38,7 +41,13 @@ void start_cli()
 			string pgn_file_name = _split[1];
 			string out_file_name = _split[2];
 
-			ofstream out_file(out_file_name, ios::app);
+			size_t variations = static_cast<size_t>(stoull(_split[3]));
+			size_t moves = static_cast<size_t>(stoull(_split[4]));
+
+			book.setVariations(variations);
+			book.setMoveCount(moves);
+
+			ofstream out_file(out_file_name, ios::out | ios::trunc);
 			ifstream pgn_file(pgn_file_name);
 
 			if (!pgn_file.is_open())

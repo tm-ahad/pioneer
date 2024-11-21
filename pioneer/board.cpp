@@ -119,13 +119,17 @@ void Move::fromSquares(Square to, Square from)
 
 int16_t Move::encode() const
 {
-    return (from << 3) | to;
+    return (from << 8) | to;
 }
 
-void Move::decode(int16_t enc)
+Move Move::decode(int16_t enc)
 {
-    from = enc >> 3;
-    to = enc & 0xFF;
+    Move move = Move::null();
+
+    move.from = enc >> 8;
+    move.to = enc & 0xFF;
+
+    return move;
 }
 
 char Move::fromSquare() const

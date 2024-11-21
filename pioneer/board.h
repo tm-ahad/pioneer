@@ -40,7 +40,7 @@ public:
     Move();
 
     int16_t encode() const;
-    void decode(int16_t enc);
+    static Move decode(int16_t enc);
     char fromSquare() const;
     char toSquare() const;
     bool isNull() const;

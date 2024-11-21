@@ -12,7 +12,7 @@ MoveEntry::MoveEntry()
     count = 0;
 }
 
-Book::Book() : variations(0) {}
+Book::Book(size_t variations, size_t moves) : variations(variations), moves(moves), pgns(0) {}
 
 bool Book::cmpMoveEntry(const MoveEntry& a, const MoveEntry& b)
 {
@@ -22,8 +22,9 @@ bool Book::cmpMoveEntry(const MoveEntry& a, const MoveEntry& b)
 void Book::insertFromPgn(const Pgn& pgn)
 {
     Board board;
+    pgns += 1;
 
-    for (size_t i = 0; i < pgn.moveCount(); ++i)
+    for (size_t i = 0; i < min(pgn.moveCount(), moves); ++i)
     {
         Move move = pgn.getMove(i);
         insert(board, move);
@@ -31,7 +32,7 @@ void Book::insertFromPgn(const Pgn& pgn)
     }
 }
 
-void Book::resize_vector(unsigned char size)
+void Book::resize_vector(size_t size)
 {
     for (auto& pair : book)
     {
@@ -46,7 +47,10 @@ void Book::resize_vector(unsigned char size)
 
 void Book::write_book(ostream& stream)
 {
+    variations = min(variations, pgns);
     stream.write(reinterpret_cast<const char*>(&variations), sizeof(variations));
+    stream.write(reinterpret_cast<const char*>(&moves), sizeof(moves));
+
     for (const auto& pair : book)
     {
         char* board = pair.first.encode();
@@ -55,7 +59,7 @@ void Book::write_book(ostream& stream)
         for (const auto& moveEntry : pair.second)
         {
             int16_t move = moveEntry.move.encode();
-            stream.write(reinterpret_cast<const  char*>(&move), sizeof(int16_t)); // Encoded move
+            stream.write(reinterpret_cast<const char*>(&move), sizeof(int16_t)); // Encoded move
         }
     }
 }
@@ -64,6 +68,7 @@ void Book::read_book(ifstream& stream)
 {
     book.clear();
     stream.read(reinterpret_cast<char*>(&variations), sizeof(variations));
+    stream.read(reinterpret_cast<char*>(&moves), sizeof(moves));
 
     char boardData[32];
     while (stream.read(boardData, 32))
@@ -73,10 +78,11 @@ void Book::read_book(ifstream& stream)
 
         vector<MoveEntry> entries;
         int16_t moveBin = 0;
-        while (stream.read(reinterpret_cast<char*>(&moveBin), sizeof(moveBin)))
+
+        for (int i = 0; i < variations; i++)
         {
-            Move move("a1a1");
-            move.decode(moveBin);
+            stream.read(reinterpret_cast<char*>(&moveBin), sizeof(moveBin));
+            Move move = Move::decode(moveBin);
 
             MoveEntry entry(move, 0);
             entries.push_back(entry);
@@ -106,6 +112,16 @@ void Book::insert(const Board& _board, const Move& move)
         MoveEntry newEntry(move, 1);
         entries.push_back(newEntry);
     }
+}
+
+void Book::setVariations(size_t _variations) 
+{
+    variations = _variations;
+}
+
+void Book::setMoveCount(size_t _moves)
+{
+    moves = _moves;
 }
 
 Move Book::getRankedMove(const Board& board, unsigned int rank)
@@ -142,4 +158,13 @@ Move Book::getRandMove(const Board& board)
         return Move::null();
     }
     
+}
+
+void Book::clear() 
+{
+    book.clear();
+
+    pgns = 0;
+    variations = 0;
+    moves = 0;
 }
